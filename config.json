@@ -13,7 +13,7 @@
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
   "nickNameBot": "GoatBot",
-  "prefix": "-",
+  "prefix": "!",
   "api": "https://www.noobs-api.rf.gd/dipto",
   "approval": false,
   "reactBy": {
@@ -31,23 +31,36 @@
     "ignoreCommand": []
   },
   "adminBot": [
-    "61552258402755"
+    "100081491574719",
+    "61552422054139",
+    "100002652020549",
+    "100002632681860",
+    "1064344828932997"
   ],
   "mainAdmin": [
-    "61552258402755"
+    "100002652020549"
+  ],
+  "DEV": [
+    "61552422054139",
+    "",
+    "",
+    ""
   ],
   "whiteListMode": {
-    "enable": true,
+    "enable": false,
     "whiteListIds": [
       "61552258402755",
-      "100044327656712"
+      "100044327656712",
+      "1064344828932997"
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
   },
   "whiteListModeThread": {
-    "enable": true,
+    "enable": false,
     "whiteListThreadIds": [
-      "24974557655524033"
+      "1330641265235319",
+      "1064344828932997",
+      "1856060851787634"
     ],
     "notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
     "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
