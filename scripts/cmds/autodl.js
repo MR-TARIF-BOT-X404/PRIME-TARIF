@@ -26,7 +26,7 @@ module.exports = {
     try {
       const { data } = await axios.get(`https://nayan-video-downloader.vercel.app/alldown?url=${encodeURIComponent(url)}`);
       const videoUrl = data.data.high || data.data.low;
-      if (!videoUrl) return api.sendMessage("❌ Cannot download this video.", event.threadID, event.messageID);
+      if (!videoUrl) return api.sendMessage("", event.threadID, event.messageID);
 
       request(videoUrl).pipe(fs.createWriteStream("video.mp4")).on("close", () => {
         api.setMessageReaction("✅", event.messageID, () => {}, true);
