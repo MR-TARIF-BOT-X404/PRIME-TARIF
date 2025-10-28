@@ -1,58 +1,71 @@
-const { GoatWrapper } = require("fca-liane-utils");
 module.exports = {
   config: {
     name: "tag",
-    alises:[],
-    category: 'MEDIA',
+    aliases: [],
     role: 0,
-    author: 'dipto',
+    usePrefix: false,
+    author: 'AHMED TARIF',
     countDown: 3,
-    description: { en: '𝗧𝗮𝗴𝘀 𝗮 𝘂𝘀𝗲𝗿 𝘁𝗼 𝘁𝗵𝗲 𝗽𝗿𝗼𝘃𝗶𝗱𝗲𝗱 𝗻𝗮𝗺𝗲 𝗼𝗿 𝗺𝗲𝘀𝘀𝗮𝗴𝗲 𝗿𝗲𝗽𝗹𝘆.' },
+    category: 'MEDIA',
+    description: {
+      en: '𝗧𝗮𝗴𝘀 a user by reply, name, or self-mention if no one specified.'
+    },
     guide: {
-      en: `1. Reply to a message\n2. Use {pm}tag [name]\n3. Use {pm}tag [name] [message] `
+      en: `1. Reply to a message\n2. Use {pm}tag [name]\n3. Use {pm}tag [name] [message]`
     },
   },
+
   onStart: async ({ api, event, usersData, threadsData, args }) => {
-    const { threadID, messageID, messageReply } = event;
+    const { threadID, messageID, messageReply, senderID } = event;
+
     try {
-      const d = await threadsData.get(threadID);
-      const dd = d.members.map(gud => gud.name);
-      const pp = d.members.map(gud => gud.userID);
-      const combined = dd.map((name, index) => ({
-        Name: name,
-        UserId: pp[index]
+      const threadData = await threadsData.get(threadID);
+      const members = threadData.members.map(member => ({
+        Name: member.name,
+        UserId: member.userID
       }));
+
       let namesToTag = [];
       let extraMessage = args.join(' ');
       let m = messageID;
+
       if (messageReply) {
+        // Tag the user from reply
         m = messageReply.messageID;
         const uid = messageReply.senderID;
         const name = await usersData.getName(uid);
         namesToTag.push({ Name: name, UserId: uid });
-      } else {
-        extraMessage = args.slice(1).join(' ');
-        const namesToCheck = args.length > 0 ? [args[0]] : ['dip'];
-        namesToTag = combined.filter(member =>
-          namesToCheck.some(name => member.Name.toLowerCase().includes(name.toLowerCase())));
+      } else if (args[0]) {
+        // Tag by name from args
+        const nameArg = args[0];
+        namesToTag = members.filter(member =>
+          member.Name.toLowerCase().includes(nameArg.toLowerCase())
+        );
         if (namesToTag.length === 0) {
-          return api.sendMessage('not found', threadID, messageID);
+          return api.sendMessage('❌ User not found', threadID, messageID);
         }
+        extraMessage = args.slice(1).join(' ');
+      } else {
+        // No args or reply, self-mention
+        const name = await usersData.getName(senderID);
+        namesToTag.push({ Name: name, UserId: senderID });
       }
+
+      // Prepare mentions
       const mentions = namesToTag.map(({ Name, UserId }) => ({
         tag: Name,
         id: UserId
       }));
+
       const body = namesToTag.map(({ Name }) => Name).join(', ');
-      const finalBody = extraMessage ? `${body} - ${extraMessage}` : body;
-      api.sendMessage({
-          body: finalBody,
-          mentions
-        },threadID,m);
+      const finalBody = extraMessage ? `${body} \n✆|  ${extraMessage}` : body;
+
+      // Send message with mentions
+      await api.sendMessage({ body: finalBody, mentions }, threadID, m);
+
     } catch (e) {
-      api.sendMessage(e.message, threadID, messageID);
+      console.error(e);
+      await api.sendMessage(`❌ Error: ${e.message}`, threadID, messageID);
     }
   }
 };
-const wrapper = new GoatWrapper(module.exports);
-wrapper.applyNoPrefix({ allowPrefix: true });
