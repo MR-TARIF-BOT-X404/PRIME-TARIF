@@ -1,11 +1,10 @@
-const { GoatWrapper } = require("fca-liane-utils");
-
 module.exports.config = {
   name: "link",
   aliases: ["fblink"],
   author: "AHMED TARIF",
   version: "1.3",
   role: 0,
+  usePrefix: false,
   category: "inform",
   description: { en: "UID বা মেনশন থেকে FB লিঙ্ক দেখাবে" },
   guide: { en: "মেসেজ রিপ্লাই, মেনশন বা UID ব্যবহার করুন।" }
@@ -21,6 +20,3 @@ module.exports.onStart = async ({ api, event }) => {
     await api.sendMessage("⚠️ সমস্যা হয়েছে। আবার চেষ্টা করুন।", event.threadID, event.messageID);
   }
 };
-
-const wrapper = new GoatWrapper(module.exports);
-wrapper.applyNoPrefix({ allowPrefix: true });
