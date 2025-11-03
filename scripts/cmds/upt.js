@@ -5,13 +5,18 @@ const path = require("path");
 module.exports = {
   config: {
     name: "upt",
-    version: "3.2",
+    aliases: ["uptime"],
+    version: "1.20",
     author: "AHMED TARIF",
     role: 0,
-			usePrefix: false,
-    shortDescription: { en: "Displays bot uptime with 3-frame 3D-style loading and clock" },
-    category: "UPTIME"
+    usePrefix: false,
+    prefixRequired: true,
+    premium: true,
+    description: "uptime info about a specific command!",
+    category: "Inform",
+    guide: { en: "just tryp upt" }
   },
+
 
   onStart: async function ({ api, event, usersData, threadsData }) {
     try {
