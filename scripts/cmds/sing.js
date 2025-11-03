@@ -1,86 +1,80 @@
-const { GoatWrapper } = require("fca-liane-utils");
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const yts = require("yt-search");
+const fs = require("fs");
+const path = require("path");
+
+const spinner = ['⠇','⠦','⠏','⠧','⠹','⠋','⠇','⠦','⠏','⠧','⠹','⠋'];
+const ytID = url => (url.match(/(?:youtu\.be\/|v=|shorts\/)([\w-]{11})/) || [])[1];
+
+let apiUrl;
+(async () => {
+  try { 
+    apiUrl = (await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json")).data.api; 
+  } catch(e){ console.error("API URL load failed", e); }
+})();
+
+const getAudioStream = async (url) => {
+  const { data } = await axios.get(url, { responseType: "stream" });
+  return data;
+};
 
 module.exports = {
   config: {
-    name: 'sing',
-    author: 'Nyx',
-    Prefix: false,
-    category: 'MUSIC'
+    name: "sing",
+    version: "1.0.0",
+    author: "AHMED TARIF",
+    role: 0,
+    usePrefix: false,
+    prefixRequired: true,
+    premium: true,
+    description: "Searches and downloads YouTube audio!",
+    category: "Music",
+    guide: { en: "${prefix}sing name" }
   },
-  onStart: async ({ event, api, args, message }) => {
+
+  onStart: async ({ api, args, event }) => {
     try {
-      const query = args.join(' ');
-      if (!query) return message.reply('Please provide a search query!');
-      
-      const searchResponse = await axios.get(`https://mostakim.onrender.com/mostakim/ytSearch?search=${encodeURIComponent(query)}`);
-      api.setMessageReaction("⏳", event.messageID, () => {}, true);
+      const query = args.join(" ");
+      if (!query) return api.sendMessage("❌ Provide sing name or URL.", event.threadID, event.messageID);
 
-      const parseDuration = (timestamp) => {
-        const parts = timestamp.split(':').map(part => parseInt(part));
-        let seconds = 0;
+      let id = query.includes("youtu") ? ytID(query) : null;
 
-        if (parts.length === 3) {
-          seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-        } else if (parts.length === 2) {
-          seconds = parts[0] * 60 + parts[1];
+      // Spinner
+      let frame = 0;
+      const waitMsg = await api.sendMessage(`${spinner[frame]} 𝚜𝚎𝚊𝚛𝚌𝚑...`, event.threadID);
+      const interval = setInterval(() => {
+        frame = (frame + 1) % spinner.length;
+        api.editMessage(`${spinner[frame]} 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐...`, waitMsg.messageID).catch(() => {});
+      }, 200);
+
+      if (!id) {
+        const search = await yts(query);
+        if (!search.videos.length) {
+          clearInterval(interval);
+          await api.unsendMessage(waitMsg.messageID);
+          return api.sendMessage("❌ No results found.", event.threadID, event.messageID);
         }
-
-        return seconds;
-      };
-
-      const filteredVideos = searchResponse.data.filter(video => {
-        try {
-          const totalSeconds = parseDuration(video.timestamp);
-          return totalSeconds < 600;
-        } catch {
-          return false;
-        }
-      });
-
-      if (filteredVideos.length === 0) {
-        return message.reply('No short videos found (under 10 minutes)!');
+        id = search.videos[0].videoId;
       }
 
-      const selectedVideo = filteredVideos[0];
-      const tempFilePath = path.join(__dirname, 'temp_audio.m4a');
-      const apiResponse = await axios.get(`https://mostakim.onrender.com/m/sing?url=${selectedVideo.url}`);
-      
-      if (!apiResponse.data.url) {
-        throw new Error('No audio URL found in response');
-      }
+      // Fetch audio link from your API
+      const { data } = await axios.get(`${apiUrl}/ytDl3?link=${id}&format=mp3`);
 
-      const writer = fs.createWriteStream(tempFilePath);
-      const audioResponse = await axios({
-        url: apiResponse.data.url,
-        method: 'GET',
-        responseType: 'stream'
-      });
+      clearInterval(interval);
+      await api.unsendMessage(waitMsg.messageID);
 
-      audioResponse.data.pipe(writer);
-      
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-      });
+      const audioStream = await getAudioStream(data.downloadLink);
 
-      api.setMessageReaction("✅", event.messageID, () => {}, true);
+      await api.sendMessage({
+        body: `🎵 Playing: ${data.title}`,
+        attachment: audioStream
+      }, event.threadID, event.messageID);
 
-      await message.reply({
-        body: `🎧 Now playing: ${selectedVideo.title}\nDuration: ${selectedVideo.timestamp}`,
-        attachment: fs.createReadStream(tempFilePath)
-      });
-
-      fs.unlink(tempFilePath, (err) => {
-        if (err) message.reply(`Error deleting temp file: ${err.message}`);
-      });
-
-    } catch (error) {
-      message.reply(`Error: ${error.message}`);
+    } catch (e) {
+      console.error(e);
+      api.sendMessage("❌ Failed to download audio.", event.threadID, event.messageID);
     }
-  }
+  },
+
+  run: async (ctx) => module.exports.onStart(ctx),
 };
-const wrapper = new GoatWrapper(module.exports);
-wrapper.applyNoPrefix({ allowPrefix: true });
