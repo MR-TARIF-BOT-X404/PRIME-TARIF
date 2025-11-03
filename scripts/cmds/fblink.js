@@ -5,8 +5,10 @@ module.exports.config = {
   version: "1.3",
   role: 0,
   usePrefix: false,
-  category: "inform",
+  prefixRequired: true,
+  premium: true,
   description: { en: "UID বা মেনশন থেকে FB লিঙ্ক দেখাবে" },
+  category: "Inform",
   guide: { en: "মেসেজ রিপ্লাই, মেনশন বা UID ব্যবহার করুন।" }
 };
 
