@@ -1,127 +1,147 @@
+const fs = require("fs-extra");
+const path = require("path");
+const { createCanvas, loadImage } = require("canvas");
 const axios = require("axios");
-const baseApiUrl = async () => {
-    const base = await axios.get(
-        `https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json`,
-    );
-    return base.data.api;
-};
-async function getAvatarUrls(userIDs) {
-    let avatarURLs = [];
 
-    for (let userID of userIDs) {
-        try {
-            const shortUrl = `https://graph.facebook.com/${userID}/picture?height=1500&width=1500&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
-            const d = await axios.get(shortUrl);
-            let url = d.request.res.responseUrl;
-            avatarURLs.push(url);
-        } catch (error) {
-            avatarURLs.push(
-"https://i.ibb.co/qk0bnY8/363492156-824459359287620-3125820102191295474-n-png-nc-cat-1-ccb-1-7-nc-sid-5f2048-nc-eui2-Ae-HIhi-I.png");
-        }
-    }
-    return avatarURLs;
-}
+const spinner = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+
 module.exports = {
-    config: {
-        name: "gcimg",
-        aliases: ["gcimage", "grpimage"],
-        version: "1.0",
-        author: "Dipto",
-        countDown: 5,
-        role: 0,
-        description: "𝗚𝗲𝘁 𝗚𝗿𝗼𝘂𝗽 𝗜𝗺𝗮𝗴𝗲",
-        category: "IMAGE",
-        guide: "{pn} --color [color] --bgcolor [color] --admincolor [color] --membercolor [color]",
-    },
+  config: {
+    name: "gcimg",
+    aliases: ["groupimg"],
+    version: "2.0",
+    author: "AHMED TARIF",
+    role: 0,
+    prefixRequired: true,
+    premium: true,
+    description: "Displays Group Userphoto with 8 avatars per row",
+    category: "Image",
+    guide: { en: "${prefix} gcimg,groupimg" }
+  },
 
-    onStart: async function ({ api, args, event, message }) {
+  onStart: async ({ api, event, usersData, message }) => {
+    let waitMsg, frame = 0, interval;
+
+    try {
+      // Send initial waiting message
+      waitMsg = await message.reply(`${spinner[0]} 𝚜𝚎𝚊𝚛𝚌𝚑 𝚐𝚛𝚘𝚞𝚙 𝚒𝚖𝚊𝚐𝚎...🚀`);
+
+      // Spinner animation
+      interval = setInterval(async () => {
+        frame = (frame + 1) % spinner.length;
+        try { 
+          await api.editMessage(`${spinner[frame]} 𝙶𝚎𝚗𝚎𝚛𝚊𝚝𝚒𝚗𝚐  𝚒𝚖𝚊𝚐𝚎...🎨`, waitMsg.messageID); 
+        } catch {}
+      }, 200);
+
+      // Get thread info
+      const t = await api.getThreadInfo(event.threadID);
+      const parts = t.participantIDs;
+      const admins = t.adminIDs.map(a => a.id);
+
+      // Count active participants
+      const msgs = await api.getThreadHistory(event.threadID, 100, null);
+      const count = {};
+      msgs.forEach(m => parts.includes(m.senderID) && (count[m.senderID] = (count[m.senderID] || 0) + 1));
+
+      // Fetch user avatars
+      const imgs = await Promise.all(parts.map(async id => {
         try {
-            let tid;
-            let color = "white"; //text color
-            let bgColor;
-            let adminColor = "yellow";
-            let memberColor = "cyan";
-            let groupborderColor = "lime";
-            let glow = false;
-
-            for (let i = 0; i < args.length; i++) {
-                switch (args[i]) {
-                    case "--color":
-                        color = args[i + 1];
-                        args.splice(i, 2);
-                        break;
-                    case "--bgcolor":
-                        bgColor = args[i + 1];
-                        args.splice(i, 2);
-                        break;
-                    case "--admincolor":
-                        adminColor = args[i + 1];
-                        args.splice(i, 2);
-                        break;
-                    case "--membercolor":
-                        memberColor = args[i + 1];
-                        args.splice(i, 2);
-                        break;
-                    case "--groupBorder":
-                    groupborderColor = args[i + 1];
-                    args.splice(i,2);
-                        break;
-                        case "--glow":
-                    glow = args[i + 1];
-                    args.splice(i,2);
-                        break;
-                }
-            }
-
-            let threadInfo = await api.getThreadInfo(event.threadID);
-            let participantIDs = threadInfo.participantIDs;
-            let adminIDs = threadInfo.adminIDs.map((admin) => admin.id);
-            let memberURLs = await getAvatarUrls(participantIDs);
-            let adminURLs = await getAvatarUrls(adminIDs);
-
-            const data2 = {
-                memberURLs: memberURLs,
-                groupPhotoURL: threadInfo.imageSrc,
-                adminURLs: adminURLs,
-                groupName: threadInfo.threadName,
-                bgcolor: bgColor,
-                admincolor: adminColor,
-                membercolor: memberColor,
-                color: color,
-                groupborderColor,
-                glow
-            };
-
-            if (data2) {
-                var waitingMsg = await api.sendMessage("⏳ |𝑲𝒐𝒓𝒕𝒆𝒄𝒉𝒊𝒕𝒐 𝒃𝒃𝒚 𝒆𝒌𝒕𝒖 𝒘𝒂𝒊𝒕 𝒌𝒐𝒓𝒐 😷😙.",event.threadID);
-                api.setMessageReaction(
-                    "⏳",
-                    event.messageID,
-                    (err) => {},
-                    true,
-                );
-            }
-            const { data } = await axios.post(
-                `${await baseApiUrl()}/gcimg`,
-                data2,
-                { responseType: "stream" }
-            );
-
-
-                api.setMessageReaction(
-                    "✅",
-                    event.messageID,
-                    (err) => {},
-                    true);
-                message.unsend(waitingMsg.messageID);
-                message.reply({
-                    body: `𝑯𝒆𝒓𝒆 𝒊𝒔 𝒚𝒐𝒖𝒓 𝒈𝒓𝒐𝒖𝒑 𝒊𝒎𝒂𝒈𝒆 𝒃𝒃𝒚 <😘`,
-                    attachment: data,
-                });
-
-        } catch (error) {
-            console.log(error);
-            message.reply(`❌ | 𝙴𝚛𝚛𝚘𝚛: ${error.message}`);
+          const url = await usersData.getAvatarUrl(id);
+          return (await axios.get(url, { responseType: "arraybuffer" })).data;
+        } catch {
+          return null;
         }
-    },
+      }));
+
+      // Avatar settings
+      const avatarSize = 70;
+      const spacing = 20;
+      const avatarsPerRow = 8;
+
+      const rows = Math.ceil(parts.length / avatarsPerRow);
+      const canvasWidth = 700;
+      const canvasHeight = 250 + rows * (avatarSize + spacing) + 50;
+
+      const c = createCanvas(canvasWidth, canvasHeight);
+      const ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.textAlign = "center";
+      ctx.font = "26px Arial";
+      ctx.fillStyle = "black";
+
+      // Draw circular group image
+      if (t.imageSrc) {
+        try {
+          const groupImg = await loadImage(t.imageSrc);
+          const centerX = canvasWidth / 2;
+          const centerY = 80;
+          const radius = 80;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(groupImg, centerX - radius, centerY - radius, radius * 2, radius * 2);
+          ctx.restore();
+        } catch {}
+      }
+
+      // Draw group name & stats
+      ctx.fillText(t.threadName, canvasWidth / 2, 180);
+      ctx.fillText(`Admins: ${admins.length} | Active: ${Object.keys(count).length} | Members: ${parts.length - admins.length}`, canvasWidth / 2, 220);
+
+      // Draw user avatars in grid
+      let x = 20, y = 250, col = 0;
+      for (const b of imgs) {
+        if (b) {
+          const avatarImg = await loadImage(b);
+          const centerX = x + avatarSize / 2;
+          const centerY = y + avatarSize / 2;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, avatarSize / 2, 0, Math.PI * 2, true);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(avatarImg, x, y, avatarSize, avatarSize);
+          ctx.restore();
+
+          col++;
+          if (col >= avatarsPerRow) {
+            col = 0;
+            x = 20;
+            y += avatarSize + spacing;
+          } else {
+            x += avatarSize + spacing;
+          }
+        }
+      }
+
+      // Save and send
+      const out = path.join(__dirname, "cache", `gcimg_${Date.now()}.png`);
+      fs.ensureDirSync(path.dirname(out));
+      fs.writeFileSync(out, c.toBuffer("image/png"));
+
+      // Stop spinner and remove message
+      clearInterval(interval);
+      await api.unsendMessage(waitMsg.messageID);
+
+      // Send final image
+      message.reply({ body: `🖼️ ${t.threadName}`, attachment: fs.createReadStream(out) });
+
+    } catch (e) {
+      clearInterval(interval);
+      console.error(e);
+      message.reply("❌ Error: " + e.message);
+    }
+  },
+
+  onChat: async ({ event, message }) => {
+    if (event.body.toLowerCase() === "gcimg") {
+      message.body = "+gcimg";
+      return this.onStart(...arguments);
+    }
+  }
 };
