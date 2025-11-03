@@ -3,7 +3,7 @@ const axios = require('axios');
 const baseApiUrl = () => 'https://www.noobs-api.rf.gd/dipto';
 
 const prefixes = [
-  "bby", "janu", "বাবু", "babu", "bbu", "botli", "bot",
+  "bby", "janu", "বাবু", "babu", "bbu", "হাই", "bot",
   "baby", "বেবি", "জানু", "বট", "hlw", "hi", "babe"
 ];
 
@@ -15,8 +15,10 @@ module.exports = {
     version: "1.8.0",
     author: "dipto|AHMED TARIF",
     role: 0,
+    prefixRequired: true,
+    premium: true,
     description: { en: "No prefix command with auto reaction & mention support." },
-    category: "GROUP",
+    category: "Everyone",
     guide: { en: "just type bby or reply to bot" },
   },
 
